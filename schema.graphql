@@ -1,0 +1,18 @@
+type Query {
+    profile(id: ID!): Profile
+}
+
+type Profile {
+    id: ID!
+    first_name: String!
+    last_name: String!
+    posts: [Post]!
+}
+
+type Post {
+    id: ID!
+    name: String!
+    description: String!
+    type: String!
+}
+
