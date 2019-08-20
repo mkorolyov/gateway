@@ -4,11 +4,9 @@ package gateway
 
 import (
 	"context"
-	"fmt"
 	"github.com/mkorolyov/posts"
 	profile "github.com/mkorolyov/profiles"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc"
 )
 
 type Resolver struct {
@@ -16,25 +14,10 @@ type Resolver struct {
 	profilesClient profile.ProfileClient
 }
 
-func NewResolver(postsPort, profilePort string) *Resolver {
-	connOpts := []grpc.DialOption{grpc.WithInsecure()}
-	postsConn, err := grpc.Dial(":"+postsPort, connOpts...)
-	if err != nil {
-		panic(fmt.Sprintf("failed to connect to grpc posts :%s: %v", postsPort, err))
-	}
-
-	postsClient := posts.NewPostsClient(postsConn)
-
-	profileConn, err := grpc.Dial(":"+profilePort, connOpts...)
-	if err != nil {
-		panic(fmt.Sprintf("failed to connect to grpc profile :%s: %v", postsPort, err))
-	}
-
-	profilesClient := profile.NewProfileClient(profileConn)
-
+func NewResolver(postsClient posts.PostsClient, profileClient profile.ProfileClient) *Resolver {
 	return &Resolver{
 		postsClient:    postsClient,
-		profilesClient: profilesClient,
+		profilesClient: profileClient,
 	}
 }
 
@@ -42,7 +25,20 @@ func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
 }
 
-type queryResolver struct{ *Resolver }
+func (r *Resolver) Mutation() MutationResolver {
+	return &modificationResolver{&ModificationResolver{
+		postsClient:    r.postsClient,
+		profilesClient: r.profilesClient,
+	}}
+}
+
+type queryResolver struct{
+	*Resolver
+}
+
+type modificationResolver struct {
+	*ModificationResolver
+}
 
 func (r *queryResolver) Profile(ctx context.Context, id string) (*Profile, error) {
 	p, err := r.profilesClient.Get(ctx, &profile.GetRequest{Id: id})

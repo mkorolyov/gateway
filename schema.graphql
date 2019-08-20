@@ -16,3 +16,7 @@ type Post {
     type: String!
 }
 
+type Mutation {
+    createProfile(first_name: String!, last_name: String!): ID!
+    publishPost(user_id: ID!, name: String!, description: String!, type: String!): ID!
+}
