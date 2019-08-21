@@ -30,6 +30,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to grpc posts :%s: %v", postsPort, err))
 	}
+	defer postsConn.Close()
 
 	postsClient := posts.NewPostsClient(postsConn)
 
@@ -37,6 +38,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to grpc profile :%s: %v", postsPort, err))
 	}
+	defer profileConn.Close()
 
 	profilesClient := profile.NewProfileClient(profileConn)
 
