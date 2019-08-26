@@ -1,0 +1,7 @@
+Server:
+  Name: gateway
+  Endpoint: 0.0.0.0:9093
+Logger:
+  Type: dev
+Consul:
+  Endpoint: 0.0.0.0:8500

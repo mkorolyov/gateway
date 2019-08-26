@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/99designs/gqlgen v0.9.3
-	github.com/mkorolyov/core v0.0.0-20190824202944-b81292c18847 // indirect
+	github.com/mkorolyov/core v0.0.0-20190826102941-841bc689ca2c // indirect
 	github.com/mkorolyov/posts v0.0.0-20190820150507-3cfb0e4c8a9a
 	github.com/mkorolyov/profiles v0.0.0-20190820145046-83078d5b6759
 	github.com/pkg/errors v0.8.1

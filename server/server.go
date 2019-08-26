@@ -2,18 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"time"
-
 	"github.com/99designs/gqlgen/handler"
-	"github.com/mkorolyov/core/discovery/consul"
+	"github.com/mkorolyov/core/config"
+	"github.com/mkorolyov/core/server"
 	"github.com/mkorolyov/posts"
 	profile "github.com/mkorolyov/profiles"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/balancer/roundrobin"
 	"humans.net/ms/gateway"
 )
 
@@ -27,39 +20,16 @@ const (
 )
 
 func main() {
-	consul.Init()
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
-	}
+	loader := config.Configure()
+	s := server.New(loader)
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	postsClient := posts.NewPostsClient(s.Connect("posts"))
+	profilesClient := profile.NewProfileClient(s.Connect("profiles"))
 
-	connOpts := []grpc.DialOption{
-		grpc.WithBlock(),
-		grpc.WithInsecure(),
-		grpc.WithBalancerName(roundrobin.Name)}
+	s.HandleHTTP("/query_playground", handler.Playground("GraphQL playground", "/query"))
+	s.HandleHTTP("/query", handler.GraphQL(gateway.NewExecutableSchema(gateway.Config{
+		Resolvers: gateway.NewResolver(postsClient, profilesClient)})))
 
-	postsConsulConn, err := grpc.DialContext(ctx, postsTarget, connOpts...)
-	if err != nil {
-		panic(fmt.Sprintf("failed to connect to grpc posts: %v", err))
-	}
-	defer postsConsulConn.Close()
-	postsClient := posts.NewPostsClient(postsConsulConn)
-
-	profilesConsulConn, err := grpc.DialContext(ctx, profilesTarget, connOpts...)
-	if err != nil {
-		panic(fmt.Sprintf("failed to connect to grpc profile: %v", err))
-	}
-	defer profilesConsulConn.Close()
-	profilesClient := profile.NewProfileClient(profilesConsulConn)
-
-	http.Handle("/", handler.Playground("GraphQL playground", "/query"))
-	http.Handle("/query",
-		handler.GraphQL(gateway.NewExecutableSchema(gateway.Config{
-			Resolvers: gateway.NewResolver(postsClient, profilesClient)})))
-
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	s.Serve(context.Background())
 }
